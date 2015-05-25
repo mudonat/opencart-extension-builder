@@ -4,8 +4,7 @@ import os, sys, getopt
 directoryStructure = {"admin":["controller", "language", "model", 'view'],
                       "catalog":["controller", "language", "model", "view"]}
 
-fileContents = {"admin_language": '''
-<?php
+fileContents = {"admin_language": '''<?php
 // Heading
 $_['heading_title']    = '{CCModuleName}';
 
@@ -22,10 +21,18 @@ $_['entry_status']     = 'Status';
 $_['error_permission'] = 'Warning: You do not have permission to modify {SSModuleName} module!';
 ''',
 
-"admin_controller": '''
-<?php
+"admin_controller": '''<?php
 class ControllerModule{CCModuleName} extends Controller {
     private $error = array();
+
+    public function install(){
+        //install script goes here
+    }
+
+    public function uninstall(){
+        //uninstall script goes here
+    }
+    
     public function index() {
         $this->load->language('module/{SSModuleName}');
 
@@ -111,8 +118,7 @@ class ControllerModule{CCModuleName} extends Controller {
 }
 ''',
 
-"admin_model":'''
-<?php class ModelModule{CCModuleName}{
+"admin_model":'''<?php class ModelModule{CCModuleName}{
     public function install(){
         //install script goes here
     }
@@ -123,8 +129,7 @@ class ControllerModule{CCModuleName} extends Controller {
 }
 ''',
 
-"admin_view": '''
-<?php echo $header; ?><?php echo $column_left; ?>
+"admin_view": '''<?php echo $header; ?><?php echo $column_left; ?>
 <div id="content">
     <div class="page-header">
         <div class="container-fluid">
@@ -196,8 +201,7 @@ class ControllerModule{CCModuleName} extends Controller {
 <?php echo $footer; ?>
 ''',
 
-"catalog_controller": '''
-<?php
+"catalog_controller": '''<?php
 class ControllerModule{CCModuleName} extends Controller {
     public function index() {
         $status = true;
@@ -243,8 +247,7 @@ class ControllerModule{CCModuleName} extends Controller {
 }
 ''',
 
-"catalog_language": '''
-<?php
+"catalog_language": '''<?php
 // Heading
 $_['heading_title'] = '{CCModuleName}';
 
@@ -253,15 +256,13 @@ $_['text_default']  = 'Default';
 $_['text_{SSModuleName}']    = 'Select One.';
 ''',
 
-"catalog_model": '''
-<?php
+"catalog_model": '''<?php
 class ModelModule{CCModuleName} extends Model {
 
 }
 ''',
 
-"catalog_view": '''
-<div class="panel panel-default">
+"catalog_view": '''<div class="panel panel-default">
     <div class="panel-heading"><?php echo $heading_title; ?></div>
         <p style="text-align: center;"><?php echo $text_{SSModuleName}; ?></p>
         <?php foreach (${SSModuleName}s as ${SSModuleName}) { ?>
@@ -285,7 +286,7 @@ def getContent(contentIndex, moduleName):
     smallModuleName = moduleName.lower()
     return fileContents[contentIndex].replace('{SSModuleName}', smallModuleName).replace('{CCModuleName}', camelCasedModuleName)
 
-def createDirectories(path, moduleName):
+def createDirectories(path, moduleName, adminonly):
     if '' != path:
         error = False
         currentdir = os.path.dirname(os.path.realpath(__file__))
@@ -300,6 +301,9 @@ def createDirectories(path, moduleName):
 
         if not error:
             for i in directoryStructure:
+                if 'admin' != i:
+                    continue
+
                 if os.path.exists(os.path.join(currentPath, i)):
                     if type(directoryStructure[i]) is list:
                         for j in directoryStructure[i]:
@@ -355,32 +359,35 @@ def createDirectories(path, moduleName):
 def main(argv, action, moduleName):
     try:
         directory = None
-
-        opts, args = getopt.getopt(argv,"hd:o:",["directory=","dir="])
-
-        createDirs = False
+        opts, args = getopt.getopt(argv,"hd:",["directory=","dir=",'adminonly'])
+        adminonly = False
         for opt, arg in opts:
             if opt == '-h':
-                print 'build.py <action> <modulename> -d <directory>\nActions:\n create\t\t\tCreates project build'
+                usage()
                 sys.exit()
             elif opt in ("-d", "--dir", "--directory"):
                 directory = arg
+            elif opt == '--adminonly':
+                adminonly = True
 
         if None == directory:
             directory = '.'
 
         if "create" == action:
-            createDirectories(directory, moduleName)
+            createDirectories(directory, moduleName, adminonly)
     
     except getopt.GetoptError:
-        print 'build.py <action> <modulename> -d <directory>\nActions:\n create\t\t\tCreates project build'
+        usage()
         sys.exit(2)
+
+def usage():
+    print sys.argv[0] + ' <action> <modulename> -d <directory> <options>\nActions:\n create\t\t\tCreates project build\n\nOptions:\n --adminonly\t\tCreates only admin files'
 
 
 if __name__ == "__main__":
     actionList = ["create"]
-    if sys.argv[1] in actionList and len(sys.argv) > 2 and len(sys.argv[2])>3: 
+    if len(sys.argv) > 2 and sys.argv[1] in actionList and len(sys.argv[2])>3: 
         main(sys.argv[3:], action=sys.argv[1], moduleName=sys.argv[2])
     else:
-        print 'build.py <action> <modulename> -d <directory>\nActions:\n create\t\t\tCreates project build'
+        usage()
         sys.exit()
