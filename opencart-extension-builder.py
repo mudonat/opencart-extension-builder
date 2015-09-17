@@ -301,7 +301,7 @@ def createDirectories(path, moduleName, adminonly):
 
         if not error:
             for i in directoryStructure:
-                if 'admin' != i:
+                if (adminonly == True and 'admin' != i):
                     continue
 
                 if os.path.exists(os.path.join(currentPath, i)):
